@@ -16,7 +16,8 @@ try:
 except ImportError:
     import mock
 
-from bottle_utils.lazy import *
+import bottle_utils.lazy as mod
+
 
 PY2 = sys.version_info.major == 2
 
@@ -24,7 +25,7 @@ PY2 = sys.version_info.major == 2
 def get_lazy(*args, **kwargs):
     fn = mock.Mock()
     fn.__name__ = str('foo')
-    lazy = Lazy(fn, *args, **kwargs)
+    lazy = mod.Lazy(fn, *args, **kwargs)
     assert fn.call_count == 0, "Fresh lazy object, should not have eval'd"
     return fn, lazy
 
@@ -76,7 +77,7 @@ def test_coercion_should_return_string():
         s = str(lazy)
     except Exception as err:
         assert False, "Should not raise, but raised '%s'" % err
-    assert s == '1', "S should be string '1', got '%s' instead" % s
+    assert s == '1', "S should be string '1', got %r instead" % s
 
 
 def test_coercion_into_bytes():
@@ -86,10 +87,7 @@ def test_coercion_into_bytes():
         s = bytes(lazy)
     except Exception as err:
         assert False, "Should not raise, but raised '%s'" % err
-    if PY2:
-        assert s == b'1'
-    else:
-        assert s == b'\x00'
+    assert s == b'1'
 
 
 def test_interpolated():
@@ -138,7 +136,7 @@ def test_call():
 def test_caching():
     """ Caching lazy only evaluates once """
     fn = mock.Mock()
-    lazy = CachingLazy(fn)
+    lazy = mod.CachingLazy(fn)
     lazy._eval()
     lazy._eval()
     assert fn.call_count == 1, "Expected one call, got %s" % fn.call_count
@@ -149,10 +147,10 @@ def test_decorator():
     """ Calling the lazy object will call function's return value """
     fn = mock.Mock()
     fn.__name__ = str('foo')
-    lazy_fn = lazy(fn)
+    lazy_fn = mod.lazy(fn)
     val = lazy_fn()
     assert fn.called == False, "Should not be called before value is accessed"
-    assert isinstance(val, Lazy), "Return value should be a Lazy instance"
+    assert isinstance(val, mod.Lazy), "Return value should be a Lazy instance"
 
 
 def test_caching_vs_noncaching():
@@ -161,8 +159,8 @@ def test_caching_vs_noncaching():
     fn1.__name__ = str('foo')
     fn2 = mock.Mock()
     fn2.__name__ = str('bar')
-    lazy_fn = lazy(fn1)
-    lazy_caching_fn = caching_lazy(fn2)
+    lazy_fn = mod.lazy(fn1)
+    lazy_caching_fn = mod.caching_lazy(fn2)
     val1 = lazy_fn()
     val1._eval()
     val1._eval()
@@ -173,15 +171,15 @@ def test_caching_vs_noncaching():
     val2._eval()
     assert fn1.call_count == 3, "Expected 3 calls, got %s" % fn1.call_count
     assert fn2.call_count == 1, "Expected one call, got %s" % fn2.call_count
-    assert isinstance(val1, Lazy), "Expected Lazy instance"
-    assert isinstance(val2, CachingLazy), "Expected CachingLazy instance"
+    assert isinstance(val1, mod.Lazy), "Expected Lazy instance"
+    assert isinstance(val2, mod.CachingLazy), "Expected CachingLazy instance"
 
 
 def test_decorator_with_args():
     fn = mock.Mock()
     fn.__name__ = str('foo')
     fn.return_value = 'foo'
-    lazy_fn = lazy(fn)
+    lazy_fn = mod.lazy(fn)
     lazy_fn(1, 2, 3)._eval()
     fn.assert_called_once_with(1, 2, 3)
 
@@ -190,7 +188,7 @@ def test_decorator_with_kwargs():
     fn = mock.Mock()
     fn.__name__ = str('foo')
     fn.return_value = 'foo'
-    lazy_fn = lazy(fn)
+    lazy_fn = mod.lazy(fn)
     lazy_fn(1, 2, foo=3)._eval()
     fn.assert_called_once_with(1, 2, foo=3)
 
@@ -199,7 +197,7 @@ def test_lazy_class():
     fn = mock.Mock()
     fn.__name__ = str('foo')
     fn.return_value = 1  # int
-    lazy_fn = lazy(fn)
+    lazy_fn = mod.lazy(fn)
     lazy_obj = lazy_fn()
     assert isinstance(lazy_obj, int)
     fn.return_value = 'str'  # str
@@ -209,19 +207,19 @@ def test_lazy_class():
         assert isinstance(lazy_obj, str)
 
 
-#def test_interpolation():
-#    fn = mock.Mock()
-#    fn.__name__ = str('foo')
-#    fn.return_value = 'foo %s'
-#    lazy_fn = lazy(fn)
-#    assert lazy_fn() % 'bar' == 'foo bar'
+def test_interpolation():
+    fn = mock.Mock()
+    fn.__name__ = str('foo')
+    fn.return_value = 'foo %s'
+    lazy_fn = mod.lazy(fn)
+    assert lazy_fn() % 'bar' == 'foo bar'
 
 
 def test_hash():
     fn = mock.Mock()
     fn.__name__ = str('foo')
     fn.return_value = 'foo'
-    lazy_fn = lazy(fn)
+    lazy_fn = mod.lazy(fn)
     lazy_obj = lazy_fn()
     assert hash('foo') == hash(lazy_obj)
 
@@ -230,7 +228,7 @@ def test_subscript():
     fn = mock.Mock()
     fn.__name__ = str('foo')
     fn.return_value = 'foo'
-    lazy_fn = lazy(fn)
+    lazy_fn = mod.lazy(fn)
     lazy_obj = lazy_fn()
     assert lazy_obj[:2] == 'fo'
 
@@ -239,7 +237,7 @@ def test_methods():
     fn = mock.Mock()
     fn.__name__ = str('foo')
     fn.return_value = 'foobar'
-    lazy_fn = lazy(fn)
+    lazy_fn = mod.lazy(fn)
     lazy_obj = lazy_fn()
     assert lazy_obj.replace('bar', 'foo') == 'foofoo'
 
